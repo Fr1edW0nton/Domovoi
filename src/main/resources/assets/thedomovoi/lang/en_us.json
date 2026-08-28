@@ -1,0 +1,7 @@
+{
+  "block.thedomovoi.domovoi_hearth": "Domovoi Hearth",
+  "block.thedomovoi.offering_cup": "Domovoi Offering Cup",
+
+  "message.thedomovoi.hearth_placed": "\uD83D\uDD25: A warm presence settles into your home",
+  "message.thedomovoi.hearth_already_exists": "\uD83D\uDD25: You already have a hearth..."
+}

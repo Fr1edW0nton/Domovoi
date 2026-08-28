@@ -1,0 +1,12 @@
+{
+  "moth_sound": {
+    "sounds": [
+      { "name": "thedomovoi:moth_sound" }
+    ]
+  },
+  "bug_sound": {
+    "sounds": [
+      { "name": "thedomovoi:bug_sound.ogg" }
+    ]
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "has_bread=true,has_milk=true": {
+      "model": "thedomovoi:block/offering_cup_milk_bread"
+    },
+    "has_bread=true,has_milk=false": {
+      "model": "thedomovoi:block/offering_cup_bread"
+    },
+    "has_bread=false,has_milk=true": {
+      "model": "thedomovoi:block/offering_cup_milk"
+    },
+    "has_bread=false,has_milk=false": {
+      "model": "thedomovoi:block/offering_cup"
+    }
+  }
+}

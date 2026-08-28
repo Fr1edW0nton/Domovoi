@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "key": {
+    "I": "minecraft:bread",
+    "i": "minecraft:milk_bucket",
+    "C": "minecraft:campfire"
+  },
+  "pattern": [
+    " i ",
+    "ICI",
+    " i "
+  ],
+  "result": {
+    "id": "thedomovoi:domovoi_hearth"
+  }
+}

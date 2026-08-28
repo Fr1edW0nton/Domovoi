@@ -1,0 +1,6 @@
+{
+  "parent": "thedomovoi:block/template_dust_2",
+  "textures": {
+    "texture": "thedomovoi:block/dust"
+  }
+}
