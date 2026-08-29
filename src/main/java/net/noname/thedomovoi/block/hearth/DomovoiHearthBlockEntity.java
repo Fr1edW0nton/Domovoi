@@ -139,8 +139,8 @@ public class DomovoiHearthBlockEntity extends BlockEntity {
         this.monitorTimer   = getMonitorTimer();
 
         this.domovoiData = new DomovoiData();
-        this.domovoiData.setRespect( 1.0F );
-        this.domovoiData.setComfort( 0.8F );
+        this.domovoiData.setRespect( 0.0F );
+        this.domovoiData.setComfort( 0.0F );
 
         this.domovoiTimer   = getDomovoiTimer();
 
@@ -498,7 +498,27 @@ public class DomovoiHearthBlockEntity extends BlockEntity {
             else{ this.removeDecayMob( uuid ); }
         }
 
-        // check decay state -> update domovoi respect/comfort
+        float respect = 0.0F;
+        float comfort = 0.0F;
+        if ( this.decayBlocks.isEmpty() && this.decayMobs.isEmpty() ) {
+            respect = 0.03F;
+            comfort = 0.01F;
+        } else {
+            respect = -0.05F;
+            comfort = -0.01F;
+        }
+
+        if ( this.domovoiData.getDomovoiUUID() == null ) {
+            this.domovoiData.updateRespect( respect );
+            this.domovoiData.updateComfort( comfort );
+        } else {
+            Entity entity = pLevel.getEntity( this.domovoiData.getDomovoiUUID() );
+
+            if ( entity instanceof Domovoi domovoi ) {
+                domovoi.updateRespect( respect );
+                domovoi.updateComfort( comfort );
+            }
+        }
     }
 
 
@@ -604,7 +624,7 @@ public class DomovoiHearthBlockEntity extends BlockEntity {
         int blockingHeight = pLevel.getHeight(
                 Heightmap.Types.MOTION_BLOCKING,
                 pBlockPos.getX(),
-                pBlockPos.getY()
+                pBlockPos.getZ()
         );
 
         return pBlockPos.getY() >= blockingHeight;
@@ -613,7 +633,7 @@ public class DomovoiHearthBlockEntity extends BlockEntity {
 
 
     private void handleNodeDiscovery( Level pLevel, BlockPos pBlockPos ) {
-//        if ( this.hasDirectAccessToSky( pLevel, pBlockPos ) ) { return; }
+        if ( this.hasDirectAccessToSky( pLevel, pBlockPos ) ) { return; }
 
         for ( Direction layer0Direction : Direction.values() ) {
             BlockPos neighborBlockPos = pBlockPos.relative( layer0Direction );
@@ -665,7 +685,7 @@ public class DomovoiHearthBlockEntity extends BlockEntity {
             BlockPos airBlock = homeDataQueue.poll();
             if ( airBlock == null ) { continue; }
 
-//            if ( this.hasDirectAccessToSky( pLevel, airBlock ) ) { continue; }
+            if ( this.hasDirectAccessToSky( pLevel, airBlock ) ) { continue; }
 
             int nonPassableNeighbors = 0;
             for ( Direction direction : Direction.values() ) {

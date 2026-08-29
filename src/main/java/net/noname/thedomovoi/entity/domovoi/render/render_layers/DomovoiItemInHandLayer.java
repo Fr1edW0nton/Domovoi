@@ -7,6 +7,7 @@ import com.geckolib.renderer.base.PerBoneRender;
 import com.geckolib.renderer.base.RenderPassInfo;
 import com.geckolib.renderer.layer.GeoRenderLayer;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Axis;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
@@ -174,8 +175,12 @@ public class DomovoiItemInHandLayer<R extends LivingEntityRenderState & GeoRende
 
         poseStack.pushPose();
 
-        poseStack.translate( -0.15F, -1.75F, 0.0F );
+        poseStack.translate( -0.2F, -1.75F, 0.0F );
         poseStack.scale( 1.0F, 1.0F, 1.0F );
+
+        poseStack.mulPose( Axis.YP.rotationDegrees( 0 ) );
+        poseStack.mulPose( Axis.XP.rotationDegrees( 90 ) );
+        poseStack.mulPose( Axis.ZP.rotationDegrees( 0 ) );
 
         RenderType renderType = RenderTypes.entityCutoutCull( MILK );
 

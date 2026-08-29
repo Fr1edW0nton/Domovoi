@@ -192,13 +192,13 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
 
             switch ( this.getAnimationState() ) {
                 case SWEEPING -> {
-                    this.spawnCleaningParticles( Blocks.CONCRETE.gray().defaultBlockState() );
+                    this.spawnCleaningParticles( Blocks.WOOL.lightGray().defaultBlockState() );
                 }
                 case DUSTING -> {
-                    this.spawnCleaningParticles( Blocks.WOOL.white().defaultBlockState() );
+                    this.spawnCleaningParticles( Blocks.COBWEB.defaultBlockState() );
                 }
                 case CONSUMING -> {
-                    this.spawnCleaningParticles( Blocks.BAMBOO_BUTTON.defaultBlockState() );
+                    this.spawnCleaningParticles( Blocks.COAL_BLOCK.defaultBlockState() );
                 }
             }
         } ) );
@@ -246,9 +246,13 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
 
     public float getRespect() { return this.respect; }
     public void setRespect( float respect ) { this.respect = respect; }
+    public void updateRespect( float amount )
+    { this.respect = Mth.clamp( this.respect + amount, 0, 1.0F ); }
 
     public float getComfort() { return this.comfort; }
     public void setComfort( float comfort ) { this.comfort = comfort; }
+    public void updateComfort( float amount )
+    { this.comfort = Mth.clamp( this.comfort + amount, 0, 1.0F ); }
 
     public void setInitialGoalIntent( InitialGoalIntent pInitialGoalIntent )
     { this.initialGoalIntent = pInitialGoalIntent; }
@@ -885,11 +889,11 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
                     if ( !this.hasStartedEatingBread ) {
                         Domovoi.this.setConsumeType( ConsumeType.BREAD );
                         Domovoi.this.setAnimationState( AnimationState.CONSUMING );
+
+                        OfferingCupBlock.setHasBread( Domovoi.this.level(), this.offeringCupBlockPos, false );
                     }
 
                     if ( this.eatBreadTicks <= 0 ) {
-                        OfferingCupBlock.setHasBread( Domovoi.this.level(), this.offeringCupBlockPos, false );
-
                         Domovoi.this.setConsumeType( ConsumeType.NONE );
                         Domovoi.this.setAnimationState( AnimationState.IDLE );
 
@@ -902,7 +906,8 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
         public void stop() {
             super.stop();
 
-            Domovoi.this.setRevealState( RevealState.FADING_OUT );
+            Domovoi.this.updateRespect( 0.05F );
+            Domovoi.this.updateRespect( 0.01F );
 
             this.domovoiHearthBlockEntity = null;
 
