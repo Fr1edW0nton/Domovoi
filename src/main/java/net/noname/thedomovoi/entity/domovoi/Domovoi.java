@@ -165,7 +165,7 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
                             this,
                             ModEntitySounds.DOMOVOI_DUST.value(),
                             SoundSource.NEUTRAL,
-                            1.0F, 1.0F
+                            0.2F, 1.0F
                     );
                 }
 
@@ -175,14 +175,14 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
                                 this,
                                 SoundEvents.GENERIC_DRINK.value(),
                                 SoundSource.NEUTRAL,
-                                0.3F, 1.0F
+                                0.1F, 1.0F
                         );
                     } else {
                         this.level().playLocalSound(
                                 this,
                                 SoundEvents.GENERIC_EAT.value(),
                                 SoundSource.NEUTRAL,
-                                0.3F, 1.0F
+                                0.1F, 1.0F
                         );
                     }
                 }
@@ -192,13 +192,10 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
 
             switch ( this.getAnimationState() ) {
                 case SWEEPING -> {
-                    this.spawnCleaningParticles( Blocks.WOOL.lightGray().defaultBlockState() );
+                    this.spawnCleaningParticles( Blocks.GLASS.defaultBlockState() );
                 }
                 case DUSTING -> {
                     this.spawnCleaningParticles( Blocks.COBWEB.defaultBlockState() );
-                }
-                case CONSUMING -> {
-                    this.spawnCleaningParticles( Blocks.COAL_BLOCK.defaultBlockState() );
                 }
             }
         } ) );
@@ -532,7 +529,7 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
                 Domovoi.this.setDeltaMovement( Vec3.ZERO );
             }
 
-            this.eatingTicks = Domovoi.this.random.nextInt( 200, 300 );
+            this.eatingTicks = Domovoi.this.random.nextInt( 40, 60 );
 
             if ( Domovoi.this.getRevealState() == RevealState.VISIBLE )
             { Domovoi.this.setRevealState( RevealState.FADING_OUT ); }
@@ -856,8 +853,8 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
                 if ( this.cupHasMilk ) { this.offeringCupGoal = OfferingCupGoal.DRINK_MILK; }
                 else if ( this.cupHasBread ) { this.offeringCupGoal = OfferingCupGoal.EAT_BREAD; }
 
-                if ( this.cupHasMilk ) { this.drinkMilkTicks = Domovoi.this.random.nextInt( 200, 300 ); }
-                if ( this.cupHasBread ) { this.eatBreadTicks = Domovoi.this.random.nextInt( 200, 300 ); }
+                if ( this.cupHasMilk ) { this.drinkMilkTicks = Domovoi.this.random.nextInt( 10, 20 ); }
+                if ( this.cupHasBread ) { this.eatBreadTicks = Domovoi.this.random.nextInt( 20, 60 ); }
             }
         }
 
@@ -866,25 +863,11 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
             super.tick();
 
             if ( this.offeringCupGoal == OfferingCupGoal.DRINK_MILK ) {
-                if ( !this.hasStartedDrinkingMilk ) {
-                    Domovoi.this.setConsumeType( ConsumeType.MILK );
-                    Domovoi.this.setAnimationState( AnimationState.CONSUMING );
 
-                    OfferingCupBlock.setIsVisible( Domovoi.this.level(), this.offeringCupBlockPos, false );
-                }
-
-                if ( this.drinkMilkTicks <= 0 ) {
                     OfferingCupBlock.setHasMilk( Domovoi.this.level(), this.offeringCupBlockPos, false );
-
-                    Domovoi.this.setConsumeType( ConsumeType.NONE );
-                    Domovoi.this.setAnimationState( AnimationState.IDLE );
-
-                    OfferingCupBlock.setIsVisible( Domovoi.this.level(), this.offeringCupBlockPos, true );
 
                     if ( this.cupHasBread ) { this.offeringCupGoal = OfferingCupGoal.EAT_BREAD; }
                     else { this.offeringCupGoal = null; }
-                } else { this.drinkMilkTicks--; }
-
             } else if ( this.offeringCupGoal == OfferingCupGoal.EAT_BREAD ) {
                     if ( !this.hasStartedEatingBread ) {
                         Domovoi.this.setConsumeType( ConsumeType.BREAD );

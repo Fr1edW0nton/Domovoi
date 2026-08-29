@@ -111,11 +111,11 @@ public class DomovoiHearthBlockEntity extends BlockEntity {
     private int domovoiTimer;
 
     private static final DecayConfig DECAY_CONFIG = new DecayConfig(
-            0.01F,
+            0.005F,
             0.007F,
            10,
-            1.0F,
-            1.0F
+            0.3F,
+            0.3F
     );
 
     public List<BlockPos> decayBlocks = new ArrayList<>();
@@ -139,8 +139,8 @@ public class DomovoiHearthBlockEntity extends BlockEntity {
         this.monitorTimer   = getMonitorTimer();
 
         this.domovoiData = new DomovoiData();
-        this.domovoiData.setRespect( 0.0F );
-        this.domovoiData.setComfort( 0.0F );
+        this.domovoiData.setRespect( 1.0F );
+        this.domovoiData.setComfort( 1.0F );
 
         this.domovoiTimer   = getDomovoiTimer();
 
@@ -292,20 +292,20 @@ public class DomovoiHearthBlockEntity extends BlockEntity {
 
 
     private int getDomovoiTimer()
-    { return random.nextInt( 1 * Time.MINUTE.getTicks(), 2 * Time.MINUTE.getTicks() ); }
+    { return random.nextInt( 2 * Time.MINUTE.getTicks(), 4 * Time.MINUTE.getTicks() ); }
 
 
     private int getDustTimer()
-    { return random.nextInt( 3 * Time.MINUTE.getTicks(), 5 * Time.MINUTE.getTicks() ); }
+    { return random.nextInt( 3 * Time.MINUTE.getTicks(), 4 * Time.MINUTE.getTicks() ); }
 
     private int getCobwebTimer()
-    { return random.nextInt( 4 * Time.MINUTE.getTicks(), 8 * Time.MINUTE.getTicks() ); }
+    { return random.nextInt( 5 * Time.MINUTE.getTicks(), 7 * Time.MINUTE.getTicks() ); }
 
     private int getMothTimer()
-    { return random.nextInt( 1 * Time.DAY.getTicks(), 2 * Time.DAY.getTicks() ); }
+    { return random.nextInt( 4 * Time.DAY.getTicks(), 8 * Time.DAY.getTicks() ); }
 
     private int getBugTimer()
-    { return random.nextInt( 1 * Time.DAY.getTicks(), 2 * Time.DAY.getTicks() ); }
+    { return random.nextInt( 4 * Time.DAY.getTicks(), 8 * Time.DAY.getTicks() ); }
 
 
 

@@ -178,9 +178,9 @@ public class DomovoiItemInHandLayer<R extends LivingEntityRenderState & GeoRende
         poseStack.translate( -0.2F, -1.75F, 0.0F );
         poseStack.scale( 1.0F, 1.0F, 1.0F );
 
-        poseStack.mulPose( Axis.YP.rotationDegrees( 0 ) );
-        poseStack.mulPose( Axis.XP.rotationDegrees( 90 ) );
-        poseStack.mulPose( Axis.ZP.rotationDegrees( 0 ) );
+        poseStack.mulPose( Axis.YP.rotationDegrees( 90 ) );
+        poseStack.mulPose( Axis.XP.rotationDegrees( 0 ) );
+        poseStack.mulPose( Axis.ZP.rotationDegrees( 90 ) );
 
         RenderType renderType = RenderTypes.entityCutoutCull( MILK );
 
@@ -207,7 +207,7 @@ public class DomovoiItemInHandLayer<R extends LivingEntityRenderState & GeoRende
 
         poseStack.pushPose();
 
-        poseStack.translate( -0.15F, -1.75F, 0.0F );
+        poseStack.translate( 0.1F, -1.8F, 0.0F );
         poseStack.scale( 1.0F, 1.0F, 1.0F );
 
         RenderType renderType = RenderTypes.entityCutoutCull( BREAD );
