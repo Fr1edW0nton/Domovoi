@@ -26,7 +26,7 @@ public class DomovoiToolLayer<R extends LivingEntityRenderState & GeoRenderState
 
     private static final String BROOM_BONE = "broom";
     private static final String DUSTER_BONE = "duster";
-    private static final String MOTH_BONE = "sleeping_moth";
+    private static final String MOTH_BONE = "moth";
 
     public DomovoiToolLayer( DomovoiRenderer renderer ) { super( renderer ); }
 

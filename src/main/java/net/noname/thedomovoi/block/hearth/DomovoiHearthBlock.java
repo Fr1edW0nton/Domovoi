@@ -44,22 +44,13 @@ public class DomovoiHearthBlock extends CampfireBlock {
     ) {
         super.setPlacedBy(level, pos, state, by, itemStack);
 
-        TheDomovoi.LOGGER.info( "in set placed by" );
         if (
                 level instanceof ServerLevel serverLevel
                 && by instanceof ServerPlayer serverPlayer
         ) {
-            TheDomovoi.LOGGER.info(
-                    "Domovoi setPlacedBy: pos={}, placer={}, placerUUID={}",
-                    pos,
-                    by,
-                    by.getUUID()
-            );
-
             UUID uuid = serverPlayer.getUUID();
 
             if ( serverLevel.getBlockEntity( pos ) instanceof DomovoiHearthBlockEntity domovoiHearthBlockEntity ) {
-                TheDomovoi.LOGGER.info( "cool" );
                 domovoiHearthBlockEntity.setOwnerUUID( uuid );
             }
 

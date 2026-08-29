@@ -11,6 +11,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
@@ -29,6 +30,9 @@ public class OfferingCupBlock extends Block {
     public static final BooleanProperty HAS_MILK    = BooleanProperty.create( "has_milk" );
     public static final BooleanProperty HAS_BREAD   = BooleanProperty.create( "has_bread" );
 
+    public static final BooleanProperty IS_VISIBLE  = BooleanProperty.create( "has_milk" );
+
+
     public OfferingCupBlock( Properties properties ) {
         super( properties );
 
@@ -36,6 +40,7 @@ public class OfferingCupBlock extends Block {
                 this.stateDefinition.any()
                         .setValue( HAS_MILK, false )
                         .setValue( HAS_BREAD, false )
+                        .setValue( IS_VISIBLE, true )
         );
     }
 
@@ -43,7 +48,11 @@ public class OfferingCupBlock extends Block {
 
     @Override
     protected void createBlockStateDefinition( StateDefinition.@NonNull Builder<Block, BlockState> builder ) {
-        builder.add( HAS_MILK, HAS_BREAD );
+        builder.add(
+                HAS_MILK,
+                HAS_BREAD,
+                IS_VISIBLE
+        );
     }
 
 
@@ -68,6 +77,13 @@ public class OfferingCupBlock extends Block {
         return SHAPE;
     }
 
+    @Override
+    protected @NonNull RenderShape getRenderShape(BlockState state) {
+        return state.getValue( IS_VISIBLE ) ? RenderShape.MODEL : RenderShape.INVISIBLE;
+    }
+
+
+
     public static boolean getHasMilk(Level pLevel, BlockPos pBlockPos ) {
         BlockState state = pLevel.getBlockState( pBlockPos );
         return state.hasProperty( HAS_MILK ) && state.getValue( HAS_MILK );
@@ -86,11 +102,24 @@ public class OfferingCupBlock extends Block {
         return state.hasProperty( HAS_BREAD ) && state.getValue( HAS_BREAD );
     }
 
-    public static void setHasBread(  Level pLevel, BlockPos pBlockPos, boolean pValue  ) {
+    public static void setHasBread( Level pLevel, BlockPos pBlockPos, boolean pValue  ) {
         BlockState state = pLevel.getBlockState( pBlockPos );
         if ( !state.hasProperty( HAS_BREAD ) ) { return; }
 
         pLevel.setBlock( pBlockPos, state.setValue( HAS_BREAD, pValue ), UPDATE_ALL );
+    }
+
+
+    public static boolean getIsVisible( Level pLevel, BlockPos pBlockPos ) {
+        BlockState state = pLevel.getBlockState( pBlockPos );
+        return state.hasProperty( IS_VISIBLE ) && state.getValue( IS_VISIBLE );
+    }
+
+    public static void setIsVisible( Level pLevel, BlockPos pBlockPos, boolean pValue ) {
+        BlockState state = pLevel.getBlockState( pBlockPos );
+        if ( !state.hasProperty( IS_VISIBLE ) ) { return; }
+
+        pLevel.setBlock( pBlockPos, state.setValue( IS_VISIBLE, pValue ), UPDATE_ALL );
     }
 
 

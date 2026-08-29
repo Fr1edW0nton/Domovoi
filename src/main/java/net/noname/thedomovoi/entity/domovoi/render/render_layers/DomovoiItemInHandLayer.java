@@ -106,7 +106,7 @@ public class DomovoiItemInHandLayer<R extends LivingEntityRenderState & GeoRende
 
         poseStack.pushPose();
 
-        poseStack.translate( -0.15F, -1.75F, 0.0F );
+        poseStack.translate( 0.1F, -1.7F, 0.0F );
         poseStack.scale( 1.0F, 1.0F, 1.0F );
 
         RenderType renderType = RenderTypes.entityCutoutCull( mothTexture );
@@ -146,7 +146,7 @@ public class DomovoiItemInHandLayer<R extends LivingEntityRenderState & GeoRende
 
         poseStack.pushPose();
 
-        poseStack.translate( -0.15F, -1.75F, 0.0F );
+        poseStack.translate( 0.1F, -1.70F, 0.0F );
         poseStack.scale( 1.0F, 1.0F, 1.0F );
 
         RenderType renderType = RenderTypes.entityCutoutCull( bugTexture );

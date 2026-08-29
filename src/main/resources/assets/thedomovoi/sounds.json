@@ -6,7 +6,18 @@
   },
   "bug_sound": {
     "sounds": [
-      { "name": "thedomovoi:bug_sound.ogg" }
+      { "name": "thedomovoi:bug_sound" }
+    ]
+  },
+  "domovoi_sweep": {
+    "sounds": [
+      { "name": "thedomovoi:broom_sweep_00" },
+      { "name": "thedomovoi:broom_sweep_01" }
+    ]
+  },
+  "domovoi_dust": {
+    "sounds": [
+      { "name": "thedomovoi:brush" }
     ]
   }
 }

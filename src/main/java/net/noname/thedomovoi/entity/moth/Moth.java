@@ -156,7 +156,7 @@ public class Moth extends PathfinderMob implements GeoEntity {
             BlockPos blockPos = this.getHearth();
 
             if ( serverLevel.getBlockEntity( blockPos ) instanceof DomovoiHearthBlockEntity domovoiHearthBlockEntity) {
-                domovoiHearthBlockEntity.removeMobDecay( this.getUUID() );
+                domovoiHearthBlockEntity.removeDecayMob( this.getUUID() );
             }
         }
     }

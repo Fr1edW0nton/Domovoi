@@ -1,6 +1,3 @@
 {
-  "parent": "minecraft:item/generated",
-  "textures": {
-    "layer0": "thedomovoi:item/offering_cup"
-  }
+  "parent": "thedomovoi:block/offering_cup"
 }

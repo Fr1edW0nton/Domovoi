@@ -5,8 +5,12 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.UUIDUtil;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.ai.util.LandRandomPos;
+import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -14,8 +18,11 @@ import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.TrapDoorBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.noname.thedomovoi.TheDomovoi;
 import net.noname.thedomovoi.block.ModBlocks;
@@ -104,11 +111,11 @@ public class DomovoiHearthBlockEntity extends BlockEntity {
     private int domovoiTimer;
 
     private static final DecayConfig DECAY_CONFIG = new DecayConfig(
-            0.1F,
-            0.1F,
+            0.05F,
+            0.007F,
            10,
             1.0F,
-            0.3F
+            1.0F
     );
 
     public List<BlockPos> decayBlocks = new ArrayList<>();
@@ -122,8 +129,8 @@ public class DomovoiHearthBlockEntity extends BlockEntity {
     private int mothTimer;
     private int bugTimer;
 
-    public DomovoiHearthBlockEntity( BlockPos worldPosition, BlockState blockState ) {
-        super( ModBlocks.DOMOVOI_HEARTH_BLOCK_ENTITY.get(), worldPosition, blockState );
+    public DomovoiHearthBlockEntity( BlockPos pWorldPosition, BlockState pBlockState ) {
+        super( ModBlocks.DOMOVOI_HEARTH_BLOCK_ENTITY.get(), pWorldPosition, pBlockState );
 
         this.random         = RandomSource.create();
 
@@ -146,112 +153,112 @@ public class DomovoiHearthBlockEntity extends BlockEntity {
 
 
     @Override
-    protected void saveAdditional( @NonNull ValueOutput output ) {
-        super.saveAdditional(output);
+    protected void saveAdditional( @NonNull ValueOutput pOutput ) {
+        super.saveAdditional(pOutput);
 
         if ( this.getOwnerUUID() != null ) {
-            output.store( "owner", UUIDUtil.CODEC, this.getOwnerUUID() );
+            pOutput.store( "owner", UUIDUtil.CODEC, this.getOwnerUUID() );
         }
 
-        output.putString( "home_state", this.homeState.name() );
+        pOutput.putString( "home_state", this.homeState.name() );
 
         if ( this.homeState != HomeState.COMPUTED ) {
-            output.store( "home_record", BlockPos.CODEC.listOf(), new ArrayList<>( this.homeDataRecord ) );
-            output.store ( "home_queue", BlockPos.CODEC.listOf(), new ArrayList<>( this.homeDataQueue ) );
+            pOutput.store( "home_record", BlockPos.CODEC.listOf(), new ArrayList<>( this.homeDataRecord ) );
+            pOutput.store ( "home_queue", BlockPos.CODEC.listOf(), new ArrayList<>( this.homeDataQueue ) );
         }
 
-        output.store( "floor_blocks",                   BlockPos.CODEC.listOf(),    this.floorBlocks );
-        output.store( "corner_blocks",                  BlockPos.CODEC.listOf(),    this.cornerBlocks );
-        output.store( "offering_cup_blocks",            BlockPos.CODEC.listOf(),    this.offeringCupBlocks );
-        output.store( "decay_blocks",                   BlockPos.CODEC.listOf(),    this.decayBlocks );
-        output.store( "decay_mobs",                     UUIDUtil.CODEC.listOf(),    this.decayMobs);
+        pOutput.store( "floor_blocks",                   BlockPos.CODEC.listOf(),    this.floorBlocks );
+        pOutput.store( "corner_blocks",                  BlockPos.CODEC.listOf(),    this.cornerBlocks );
+        pOutput.store( "offering_cup_blocks",            BlockPos.CODEC.listOf(),    this.offeringCupBlocks );
+        pOutput.store( "decay_blocks",                   BlockPos.CODEC.listOf(),    this.decayBlocks );
+        pOutput.store( "decay_mobs",                     UUIDUtil.CODEC.listOf(),    this.decayMobs);
 
-        output.store( "offering_cup_blocks_index_of",   BLOCK_MAP_CODEC,            this.offeringCupIndexOf );
-        output.store( "decay_blocks_index_of",          BLOCK_MAP_CODEC,            this.decayBlocksIndexOf );
-        output.store( "decay_mobs_index_of",            MOB_MAP_CODEC,              this.decayMobsIndexOf );
+        pOutput.store( "offering_cup_blocks_index_of",   BLOCK_MAP_CODEC,            this.offeringCupIndexOf );
+        pOutput.store( "decay_blocks_index_of",          BLOCK_MAP_CODEC,            this.decayBlocksIndexOf );
+        pOutput.store( "decay_mobs_index_of",            MOB_MAP_CODEC,              this.decayMobsIndexOf );
 
 
-        this.domovoiData.saveData( output );
+        this.domovoiData.saveData( pOutput );
 
-        output.putInt( "home_timer",    this.homeTimer );
-        output.putInt( "monitor_timer", this.monitorTimer );
-        output.putInt( "domovoi_timer", this.domovoiTimer );
-        output.putInt( "dust_timer",    this.dustTimer );
-        output.putInt( "cobweb_timer",  this.cobwebTimer );
-        output.putInt( "moth_timer",    this.mothTimer );
-        output.putInt( "bug_timer",     this.bugTimer );
+        pOutput.putInt( "home_timer",    this.homeTimer );
+        pOutput.putInt( "monitor_timer", this.monitorTimer );
+        pOutput.putInt( "domovoi_timer", this.domovoiTimer );
+        pOutput.putInt( "dust_timer",    this.dustTimer );
+        pOutput.putInt( "cobweb_timer",  this.cobwebTimer );
+        pOutput.putInt( "moth_timer",    this.mothTimer );
+        pOutput.putInt( "bug_timer",     this.bugTimer );
     }
 
     @Override
-    protected void loadAdditional( @NonNull ValueInput input ) {
-        super.loadAdditional(input);
+    protected void loadAdditional( @NonNull ValueInput pInput ) {
+        super.loadAdditional(pInput);
 
-        this.ownerUUID = input.read( "owner", UUIDUtil.CODEC ).orElse( null );
+        this.ownerUUID = pInput.read( "owner", UUIDUtil.CODEC ).orElse( null );
 
-        String homeState    = input.getStringOr( "home_state", HomeState.UNCOMPUTED.name() );
+        String homeState    = pInput.getStringOr( "home_state", HomeState.UNCOMPUTED.name() );
         this.homeState      = HomeState.valueOf( homeState );
 
         if ( this.homeState != HomeState.COMPUTED ) {
             this.homeDataRecord = new HashSet<>(
-                    input.read( "home_record",  BlockPos.CODEC.listOf() ).orElse( List.of() )
+                    pInput.read( "home_record",  BlockPos.CODEC.listOf() ).orElse( List.of() )
             );
 
             this.homeDataQueue = new ArrayDeque<>(
-                    input.read( "home_queue",   BlockPos.CODEC.listOf() ).orElse( List.of() )
+                    pInput.read( "home_queue",   BlockPos.CODEC.listOf() ).orElse( List.of() )
             );
         }
 
         this.floorBlocks        = new ArrayList<>(
-                                        input.read( "floor_blocks", BlockPos.CODEC.listOf() )
+                                        pInput.read( "floor_blocks", BlockPos.CODEC.listOf() )
                                                 .orElse( new ArrayList<>() )
                                 );
         this.cornerBlocks       = new ArrayList<>(
-                                        input.read( "corner_blocks", BlockPos.CODEC.listOf() )
+                                        pInput.read( "corner_blocks", BlockPos.CODEC.listOf() )
                                                 .orElse( new ArrayList<>() )
                                 );
         this.offeringCupBlocks  = new ArrayList<>(
-                                        input.read( "offering_cup_blocks", BlockPos.CODEC.listOf() )
+                                        pInput.read( "offering_cup_blocks", BlockPos.CODEC.listOf() )
                                                 .orElse( new ArrayList<>() )
                                 );
         this.decayBlocks        = new ArrayList<>(
-                                        input.read( "decay_blocks", BlockPos.CODEC.listOf() )
+                                        pInput.read( "decay_blocks", BlockPos.CODEC.listOf() )
                                                 .orElse( new ArrayList<>() )
                                 );
         this.decayMobs          = new ArrayList<>(
-                                        input.read( "decay_mobs", UUIDUtil.CODEC.listOf() )
+                                        pInput.read( "decay_mobs", UUIDUtil.CODEC.listOf() )
                                                 .orElse( new ArrayList<>() )
                                 );
 
         this.offeringCupIndexOf = new HashMap<>(
-                                        input.read( "offering_cup_blocks_index_of", BLOCK_MAP_CODEC )
+                                        pInput.read( "offering_cup_blocks_index_of", BLOCK_MAP_CODEC )
                                                 .orElse( Collections.emptyMap() )
                                 );
         this.decayBlocksIndexOf = new HashMap<>(
-                                        input.read( "decay_blocks_index_of", BLOCK_MAP_CODEC )
+                                        pInput.read( "decay_blocks_index_of", BLOCK_MAP_CODEC )
                                                 .orElse( Collections.emptyMap() )
                                 );
         this.decayMobsIndexOf   = new HashMap<>(
-                                        input.read( "decay_mobs_index_of", MOB_MAP_CODEC )
+                                        pInput.read( "decay_mobs_index_of", MOB_MAP_CODEC )
                                                 .orElse( Collections.emptyMap() )
                                 );
 
 
-        UUID domovoiUUID        = input.read( "domovoi_uuid", UUIDUtil.CODEC ).orElse( null );
-        float respect           = input.getFloatOr( "respect", 0.1F );
-        float comfort           = input.getFloatOr( "comfort", 0.0F );
+        UUID domovoiUUID        = pInput.read( "domovoi_uuid", UUIDUtil.CODEC ).orElse( null );
+        float respect           = pInput.getFloatOr( "respect", 0.1F );
+        float comfort           = pInput.getFloatOr( "comfort", 0.0F );
 
         this.domovoiData = new DomovoiData();
         this.domovoiData.setDomovoiUUID( domovoiUUID );
         this.domovoiData.setRespect( respect );
         this.domovoiData.setComfort( comfort );
 
-        this.homeTimer          = input.getIntOr( "home_timer",     this.getHomeTimer() );
-        this.monitorTimer       = input.getIntOr( "monitor_timer",  this.getMonitorTimer() );
-        this.domovoiTimer       = input.getIntOr( "domovoi_timer",  this.getDomovoiTimer() );
-        this.dustTimer          = input.getIntOr( "dust_timer",     this.getDustTimer() );
-        this.cobwebTimer        = input.getIntOr( "cobweb_timer",   this.getCobwebTimer() );
-        this.mothTimer          = input.getIntOr( "moth_timer",     this.getMothTimer() );
-        this.bugTimer           = input.getIntOr( "bug_timer",      this.getBugTimer() );
+        this.homeTimer          = pInput.getIntOr( "home_timer",     this.getHomeTimer() );
+        this.monitorTimer       = pInput.getIntOr( "monitor_timer",  this.getMonitorTimer() );
+        this.domovoiTimer       = pInput.getIntOr( "domovoi_timer",  this.getDomovoiTimer() );
+        this.dustTimer          = pInput.getIntOr( "dust_timer",     this.getDustTimer() );
+        this.cobwebTimer        = pInput.getIntOr( "cobweb_timer",   this.getCobwebTimer() );
+        this.mothTimer          = pInput.getIntOr( "moth_timer",     this.getMothTimer() );
+        this.bugTimer           = pInput.getIntOr( "bug_timer",      this.getBugTimer() );
     }
 
 
@@ -266,6 +273,7 @@ public class DomovoiHearthBlockEntity extends BlockEntity {
         this.cornerBlocks.clear();
 
         this.offeringCupBlocks.clear();
+        this.offeringCupIndexOf.clear();
     }
 
 
@@ -276,7 +284,7 @@ public class DomovoiHearthBlockEntity extends BlockEntity {
 
 
     private int getHomeTimer()
-    { return random.nextInt( 30 * Time.DAY.getTicks(), 60 * Time.DAY.getTicks() ); }
+    { return random.nextInt( 20 * Time.DAY.getTicks(), 30 * Time.DAY.getTicks() ); }
 
 
     private int getMonitorTimer()
@@ -288,13 +296,13 @@ public class DomovoiHearthBlockEntity extends BlockEntity {
 
 
     private int getDustTimer()
-    { return random.nextInt( 2 * Time.DAY.getTicks(), 3 * Time.DAY.getTicks() ); }
-
-    private int getCobwebTimer()
     { return random.nextInt( 3 * Time.DAY.getTicks(), 6 * Time.DAY.getTicks() ); }
 
+    private int getCobwebTimer()
+    { return random.nextInt( 4 * Time.DAY.getTicks(), 6 * Time.DAY.getTicks() ); }
+
     private int getMothTimer()
-    { return random.nextInt( 1 * Time.MINUTE.getTicks(), 2 * Time.MINUTE.getTicks() ); }
+    { return random.nextInt( 5 * Time.DAY.getTicks(), 8 * Time.DAY.getTicks() ); }
 
     private int getBugTimer()
     { return random.nextInt( 4 * Time.DAY.getTicks(), 8 * Time.DAY.getTicks() ); }
@@ -314,57 +322,57 @@ public class DomovoiHearthBlockEntity extends BlockEntity {
 
 
 
-    private void addBlock( Map<BlockPos, Integer> indexOf, List<BlockPos> blocks, BlockPos pBlockPos ) {
-        if ( indexOf.containsKey( pBlockPos ) ) { return; }
+    private void addBlock( Map<BlockPos, Integer> pIndexOf, List<BlockPos> pBlocks, BlockPos pBlockPos ) {
+        if ( pIndexOf.containsKey( pBlockPos ) ) { return; }
 
-        indexOf.put( pBlockPos, blocks.size() );
-        blocks.add( pBlockPos );
+        pIndexOf.put( pBlockPos, pBlocks.size() );
+        pBlocks.add( pBlockPos );
     }
 
-    private void removeBlock( Map<BlockPos, Integer> indexOf, List<BlockPos> blocks, BlockPos pBlockPos ) {
-        Integer idx = indexOf.remove( pBlockPos );
+    private void removeBlock( Map<BlockPos, Integer> pIndexOf, List<BlockPos> pBlocks, BlockPos pBlockPos ) {
+        Integer idx = pIndexOf.remove( pBlockPos );
         if ( idx == null ) { return; }
 
-        int lastIdx = blocks.size() - 1;
-        BlockPos lastElement = blocks.get( lastIdx );
+        int lastIdx = pBlocks.size() - 1;
+        BlockPos lastElement = pBlocks.get( lastIdx );
 
-        blocks.set( idx, lastElement );
-        indexOf.put( lastElement, idx );
-        blocks.remove( lastIdx );
+        pBlocks.set( idx, lastElement );
+        pIndexOf.put( lastElement, idx );
+        pBlocks.remove( lastIdx );
     }
 
-    public void addDecayBlock( BlockPos blockPos )
-    { this.addBlock( this.decayBlocksIndexOf, this.decayBlocks, blockPos ); }
-    public void removeDecayBlock( BlockPos blockPos )
-    { this.removeBlock( this.decayBlocksIndexOf, this.decayBlocks, blockPos ); }
+    public void addDecayBlock( BlockPos pBlockPos )
+    { this.addBlock( this.decayBlocksIndexOf, this.decayBlocks, pBlockPos ); }
+    public void removeDecayBlock( BlockPos pBlockPos )
+    { this.removeBlock( this.decayBlocksIndexOf, this.decayBlocks, pBlockPos ); }
 
-    public void addOfferingBlock( BlockPos blockPos )
-    { this.addBlock( this.offeringCupIndexOf, this.offeringCupBlocks, blockPos ); }
-    public void removeOfferingBlock( BlockPos blockPos )
-    { this.removeBlock( this.offeringCupIndexOf, this.offeringCupBlocks, blockPos ); }
+    public void addOfferingBlock( BlockPos pBlockPos )
+    { this.addBlock( this.offeringCupIndexOf, this.offeringCupBlocks, pBlockPos ); }
+    public void removeOfferingBlock( BlockPos pBlockPos )
+    { this.removeBlock( this.offeringCupIndexOf, this.offeringCupBlocks, pBlockPos ); }
 
 
-    public void addMob( Map<UUID, Integer> indexOf, List<UUID> uuids, UUID pUUID ) {
-        if ( indexOf.containsKey( pUUID ) ) { return; }
+    public void addMob( Map<UUID, Integer> pIndexOf, List<UUID> pUUIDs, UUID pUUID ) {
+        if ( pIndexOf.containsKey( pUUID ) ) { return; }
 
-        indexOf.put( pUUID, uuids.size() );
-        uuids.add( pUUID );
+        pIndexOf.put( pUUID, pUUIDs.size() );
+        pUUIDs.add( pUUID );
     }
 
-    public void removeMob( Map<UUID, Integer> indexOf, List<UUID> uuids, UUID pUUID ) {
-        Integer idx = indexOf.remove( pUUID );
+    public void removeMob( Map<UUID, Integer> pIndexOf, List<UUID> pUUIDs, UUID pUUID ) {
+        Integer idx = pIndexOf.remove( pUUID );
         if ( idx == null ) { return; }
 
-        int lastIdx = uuids.size() - 1;
-        UUID lastElement = uuids.get( lastIdx );
+        int lastIdx = pUUIDs.size() - 1;
+        UUID lastElement = pUUIDs.get( lastIdx );
 
-        uuids.set( idx, lastElement );
-        indexOf.put( lastElement, idx );
-        uuids.remove( lastIdx );
+        pUUIDs.set( idx, lastElement );
+        pIndexOf.put( lastElement, idx );
+        pUUIDs.remove( lastIdx );
     }
 
-    public void addDecayMob( UUID uuid ) { this.addMob( this.decayMobsIndexOf, this.decayMobs, uuid ); }
-    public void removeDecayMob( UUID uuid ) { this.removeMob( this.decayMobsIndexOf, this.decayMobs, uuid ); }
+    public void addDecayMob( UUID pUUID ) { this.addMob( this.decayMobsIndexOf, this.decayMobs, pUUID ); }
+    public void removeDecayMob( UUID pUUID ) { this.removeMob( this.decayMobsIndexOf, this.decayMobs, pUUID ); }
 
 
 
@@ -469,6 +477,13 @@ public class DomovoiHearthBlockEntity extends BlockEntity {
 
 
     private void handleMonitor( Level pLevel ) {
+        for ( BlockPos blockPos : this.offeringCupBlocks ) {
+            BlockState blockState = pLevel.getBlockState( blockPos );
+
+            if ( blockState.getBlock() instanceof OfferingCupBlock ) { continue; }
+            else { this.removeOfferingBlock( blockPos ); }
+        }
+
         for ( BlockPos blockPos : this.decayBlocks ) {
             BlockState blockState = pLevel.getBlockState( blockPos );
 
@@ -476,7 +491,50 @@ public class DomovoiHearthBlockEntity extends BlockEntity {
             else { removeBlock( this.decayBlocksIndexOf, this.decayBlocks, blockPos ); }
         }
 
+        for ( UUID uuid : this.decayMobs ) {
+            Entity entity = pLevel.getEntity( uuid );
+
+            if ( entity instanceof Moth || entity instanceof Bug ) { continue; }
+            else{ this.removeDecayMob( uuid ); }
+        }
+
         // check decay state -> update domovoi respect/comfort
+    }
+
+
+
+    private boolean isNight( Level pLevel ) {
+        long time = pLevel.getOverworldClockTime() % 24_000L;
+        return time >= 13_000L && time <= 23_000;
+    }
+
+    private void protectHome( ServerLevel pLevel ) {
+        double radius = 20.0D;
+
+        AABB area = new AABB( this.getBlockPos() ).inflate( radius );
+
+        List<Monster> monsters = pLevel.getEntitiesOfClass(
+                Monster.class,
+                area,
+                Monster::isAlive
+        );
+
+        Vec3 hearthPos = Vec3.atCenterOf( this.getBlockPos() );
+
+        for ( Monster monster : monsters ) {
+            Vec3 fleePos = LandRandomPos.getPosAway(
+                    monster,
+                    16, 17,
+                    hearthPos
+            );
+            if ( fleePos == null ) { continue; }
+
+            monster.setTarget( null );
+            monster.getNavigation().moveTo(
+                    fleePos.x, fleePos.y, fleePos.x,
+                    1.35
+            );
+        }
     }
 
 
@@ -497,15 +555,10 @@ public class DomovoiHearthBlockEntity extends BlockEntity {
 
         this.domovoiData.setDomovoiUUID( domovoi.getUUID() );
         pLevel.addFreshEntity( domovoi );
-        TheDomovoi.LOGGER.info( "domovoi created" );
-
-
-        this.domovoiTimer = getDomovoiTimer();
     }
 
 
     public void handleDomovoiReturn( Domovoi pDomovoi ) {
-        TheDomovoi.LOGGER.info( "domovoi returning" );
         this.domovoiData.setDomovoiUUID( null );
         this.domovoiData.setRespect( pDomovoi.getRespect() );
         this.domovoiData.setComfort( pDomovoi.getComfort() );
@@ -522,18 +575,21 @@ public class DomovoiHearthBlockEntity extends BlockEntity {
                 boolean hasBread    = OfferingCupBlock.getHasBread( pLevel, blockPos );
 
                 if ( hasMilk || hasBread ) {
-                    TheDomovoi.LOGGER.info( "waking domovoi to get offerings" );
                     createDomovoi( pLevel, Domovoi.InitialGoalIntent.RECEIVE_OFFERINGS );
 
+                    this.domovoiTimer = getDomovoiTimer();
                     return;
                 }
             }
 
             if ( random.nextFloat() < this.domovoiData.getRespect() ) {
+                if ( this.isNight( pLevel ) && pLevel instanceof ServerLevel serverLevel )
+                { this.protectHome( serverLevel ); }
+
                 if ( !this.decayMobs.isEmpty() )
-                { TheDomovoi.LOGGER.info( "waking domovoi to hunt" ); createDomovoi( pLevel, Domovoi.InitialGoalIntent.HUNTING ); }
+                { createDomovoi( pLevel, Domovoi.InitialGoalIntent.HUNTING ); }
                 else if ( !this.decayBlocks.isEmpty() )
-                { TheDomovoi.LOGGER.info( "waking domovoi to clean" ); createDomovoi( pLevel, Domovoi.InitialGoalIntent.CLEANING ); }
+                { createDomovoi( pLevel, Domovoi.InitialGoalIntent.CLEANING ); }
             }
 
             this.domovoiTimer = getDomovoiTimer();
@@ -542,13 +598,20 @@ public class DomovoiHearthBlockEntity extends BlockEntity {
 
 
 
-    private void handleNodeDiscovery( Level pLevel, BlockPos pBlockPos ) {
-        TheDomovoi.LOGGER.info( "HandleNodeDiscovery" );
+    private boolean hasDirectAccessToSky( Level pLevel, BlockPos pBlockPos ) {
+        int blockingHeight = pLevel.getHeight(
+                Heightmap.Types.MOTION_BLOCKING,
+                pBlockPos.getX(),
+                pBlockPos.getY()
+        );
 
-        if ( pLevel.canSeeSky( pBlockPos ) ) { TheDomovoi.LOGGER.info(
-                "Discovery aborted: hearth can see sky at {}",
-                pBlockPos
-        );return; }
+        return pBlockPos.getY() >= blockingHeight;
+    }
+
+
+
+    private void handleNodeDiscovery( Level pLevel, BlockPos pBlockPos ) {
+        if ( this.hasDirectAccessToSky( pLevel, pBlockPos ) ) { return; }
 
         for ( Direction layer0Direction : Direction.values() ) {
             BlockPos neighborBlockPos = pBlockPos.relative( layer0Direction );
@@ -572,24 +635,16 @@ public class DomovoiHearthBlockEntity extends BlockEntity {
                 }
             }
         }
-
-        TheDomovoi.LOGGER.info( "found {} air blocks", this.homeDataQueue.size() );
     }
 
     private void handleNodeScanCompleted() {
         homeState = HomeState.COMPUTED;
         homeDataRecord.clear();
-
-        TheDomovoi.LOGGER.info( "Node Scan complete" );
-        TheDomovoi.LOGGER.info( "{} floor blocks", this.floorBlocks.size() );
-        TheDomovoi.LOGGER.info( "{} corner blocks", this.floorBlocks.size() );
-        TheDomovoi.LOGGER.info( "{} offering cups", this.offeringCupBlocks.size() );
     }
 
     private void handleNodeScan( Level pLevel ) {
         if ( homeDataQueue.isEmpty() ) {
             this.handleNodeScanCompleted();
-
             return;
         }
 
@@ -598,14 +653,13 @@ public class DomovoiHearthBlockEntity extends BlockEntity {
         for ( int i = 0; i < queueElementsPerTick; i++ ) {
             if ( homeDataRecord.size() >= recordElementsPerHome ) {
                 this.handleNodeScanCompleted();
-
                 return;
             }
 
             BlockPos airBlock = homeDataQueue.poll();
             if ( airBlock == null ) { continue; }
 
-            if ( pLevel.canSeeSky( airBlock ) ) { continue; }
+            if ( this.hasDirectAccessToSky( pLevel, airBlock ) ) { continue; }
 
             int nonPassableNeighbors = 0;
             for ( Direction direction : Direction.values() ) {
@@ -622,7 +676,7 @@ public class DomovoiHearthBlockEntity extends BlockEntity {
                         neighborBlock instanceof OfferingCupBlock
                                 && !this.offeringCupIndexOf.containsKey( neighborBlockPos )
                 ) {
-                    this.addBlock( this.offeringCupIndexOf, this.offeringCupBlocks, neighborBlockPos );
+                    this.addOfferingBlock( neighborBlockPos );
 
                     continue;
                 } else if ( neighborBlock instanceof DoorBlock || neighborBlock instanceof TrapDoorBlock ) {

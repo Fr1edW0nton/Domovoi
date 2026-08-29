@@ -14,6 +14,8 @@ import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
@@ -61,7 +63,7 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
 
         public RawAnimation getAnimation() { return this.rawAnimation; }
     }
-    public static final EntityDataAccessor<Integer> ANIMATION_STATE
+    public static final EntityDataAccessor<Integer> ENTITY_DATA_ANIMATION_STATE
             = SynchedEntityData.defineId( Domovoi.class, EntityDataSerializers.INT );
 
     public enum ConsumeType {
@@ -71,9 +73,9 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
         MILK,
         BREAD
     }
-    public static final EntityDataAccessor<Integer> CONSUME_TYPE
+    public static final EntityDataAccessor<Integer> ENTITY_DATA_CONSUME_TYPE
             = SynchedEntityData.defineId( Domovoi.class, EntityDataSerializers.INT );
-    public static final EntityDataAccessor<Integer> CONSUME_MOB_VARIANT
+    public static final EntityDataAccessor<Integer> ENTITY_DATA_CONSUME_MOB_VARIANT
             = SynchedEntityData.defineId( Domovoi.class, EntityDataSerializers.INT );
 
     private final AnimatableInstanceCache geoCache = GeckoLibUtil.createInstanceCache( this );
@@ -96,7 +98,7 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
         INVISIBLE,
         FADING_IN
     }
-    public static final EntityDataAccessor<Integer> REVEAL_STATE
+    public static final EntityDataAccessor<Integer> ENTITY_DATA_REVEAL_STATE
             = SynchedEntityData.defineId( Domovoi.class, EntityDataSerializers.INT );
     private float previousRevealProgress = 0.0F;
     private float revealProgress = 0.0F;
@@ -112,10 +114,10 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
     protected void defineSynchedData( SynchedEntityData.@NonNull Builder entityData ) {
         super.defineSynchedData( entityData );
 
-        entityData.define( ANIMATION_STATE, AnimationState.IDLE.ordinal() );
-        entityData.define( REVEAL_STATE, RevealState.INVISIBLE.ordinal() );
-        entityData.define( CONSUME_TYPE, ConsumeType.NONE.ordinal() );
-        entityData.define( CONSUME_MOB_VARIANT, 0 );
+        entityData.define( ENTITY_DATA_ANIMATION_STATE,     AnimationState.IDLE.ordinal() );
+        entityData.define( ENTITY_DATA_REVEAL_STATE,        RevealState.INVISIBLE.ordinal() );
+        entityData.define( ENTITY_DATA_CONSUME_TYPE,        ConsumeType.NONE.ordinal() );
+        entityData.define( ENTITY_DATA_CONSUME_MOB_VARIANT, 0 );
     }
 
 
@@ -148,7 +150,43 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
                     return state.setAndContinue( this.getAnimationState().getAnimation() );
                 }
         ).setSoundKeyframeHandler( event -> {
+            switch ( event.keyframeData().getSound() ) {
+                case "broom_sweep" -> {
+                    this.level().playLocalSound(
+                            this,
+                            ModEntitySounds.DOMOVOI_SWEEP.value(),
+                            SoundSource.NEUTRAL,
+                            1.0F, 1.0F
+                    );
+                }
 
+                case "brush" -> {
+                    this.level().playLocalSound(
+                            this,
+                            ModEntitySounds.DOMOVOI_DUST.value(),
+                            SoundSource.NEUTRAL,
+                            1.0F, 1.0F
+                    );
+                }
+
+                case "munch" -> {
+                    if ( Objects.requireNonNull( this.getConsumeType()) == ConsumeType.MILK ) {
+                        this.level().playLocalSound(
+                                this,
+                                SoundEvents.GENERIC_DRINK.value(),
+                                SoundSource.NEUTRAL,
+                                1.0F, 1.0F
+                        );
+                    } else {
+                        this.level().playLocalSound(
+                                this,
+                                SoundEvents.GENERIC_EAT.value(),
+                                SoundSource.NEUTRAL,
+                                1.0F, 1.0F
+                        );
+                    }
+                }
+            }
         } ).setParticleKeyframeHandler( event -> {
             if ( !this.level().isClientSide() ) { return; }
 
@@ -158,6 +196,9 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
                 }
                 case DUSTING -> {
                     this.spawnCleaningParticles( Blocks.WOOL.white().defaultBlockState() );
+                }
+                case CONSUMING -> {
+                    this.spawnCleaningParticles( Blocks.BAMBOO_BUTTON.defaultBlockState() );
                 }
             }
         } ) );
@@ -175,17 +216,19 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
 
 
     public AnimationState getAnimationState()
-    { return AnimationState.values()[ this.entityData.get( ANIMATION_STATE ) ]; }
+    { return AnimationState.values()[ this.entityData.get( ENTITY_DATA_ANIMATION_STATE ) ]; }
     public void setAnimationState( AnimationState animationState )
-    { this.entityData.set( ANIMATION_STATE, animationState.ordinal() ); }
+    { this.entityData.set( ENTITY_DATA_ANIMATION_STATE, animationState.ordinal() ); }
 
     public ConsumeType getConsumeType()
-    { return ConsumeType.values()[ this.entityData.get( CONSUME_TYPE ) ]; }
+    { return ConsumeType.values()[ this.entityData.get( ENTITY_DATA_CONSUME_TYPE ) ]; }
     public void setConsumeType( ConsumeType pConsumeType )
-    { this.entityData.set( CONSUME_TYPE, pConsumeType.ordinal() ); }
+    { this.entityData.set( ENTITY_DATA_CONSUME_TYPE, pConsumeType.ordinal() ); }
 
-    public int getConsumeMobVariant() { return this.entityData.get( CONSUME_MOB_VARIANT ); }
-    public void setConsumeMobVariant( int pVariant ) { this.entityData.set( CONSUME_MOB_VARIANT, pVariant ); }
+    public int getConsumeMobVariant()
+    { return this.entityData.get( ENTITY_DATA_CONSUME_MOB_VARIANT ); }
+    public void setConsumeMobVariant( int pVariant )
+    { this.entityData.set( ENTITY_DATA_CONSUME_MOB_VARIANT, pVariant ); }
 
     @Override
     public @NonNull AnimatableInstanceCache getAnimatableInstanceCache() { return this.geoCache; }
@@ -217,21 +260,9 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
     { return Mth.lerp( pPartialTick, this.previousRevealProgress, this.revealProgress ); }
 
     public RevealState getRevealState()
-    { return RevealState.values()[ this.entityData.get( REVEAL_STATE ) ]; }
+    { return RevealState.values()[ this.entityData.get( ENTITY_DATA_REVEAL_STATE ) ]; }
     public void setRevealState( RevealState pRevealState )
-    { this.entityData.set( REVEAL_STATE, pRevealState.ordinal() ); }
-
-
-
-    @Override
-    protected @Nullable SoundEvent getAmbientSound() {
-        return ModEntitySounds.DOMOVOI_SOUND.value();
-    }
-
-    @Override
-    public int getAmbientSoundInterval() {
-        return this.random.nextInt( 100, 200 );
-    }
+    { this.entityData.set( ENTITY_DATA_REVEAL_STATE, pRevealState.ordinal() ); }
 
 
 
@@ -258,15 +289,22 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
         double sideOffset = ( this.random.nextDouble() - 0.5 ) * 0.5;
         Vec3 particlePos = this.getCleaningParticlePos( 0.6, sideOffset );
 
-        this.level().addParticle(
-                blockParticleOption,
-                particlePos.x,
-                particlePos.y,
-                particlePos.z,
-                ( this.random.nextDouble() - 0.5 ) * 0.8,
-                0.04 + this.random.nextDouble() * 0.05,
-                ( this.random.nextDouble() - 0.5 ) * 0.8
-        );
+        int particleCount = 10;
+        for ( int i = 0; i < particleCount; i++ ) {
+            double spawnX = particlePos.x + ( this.random.nextDouble() - 0.5 ) * 0.15;
+            double spawnY = particlePos.y + ( this.random.nextDouble() - 0.05 );
+            double spawnZ = particlePos.z + ( this.random.nextDouble() - 0.5 ) * 0.15;
+
+            double velocityX = ( this.random.nextDouble() - 0.5 ) * 0.18;
+            double velocityY = 0.08 + this.random.nextDouble() * 0.12;
+            double velocityZ = ( this.random.nextDouble() - 0.5 ) * 0.18;
+
+            level.addParticle(
+                    blockParticleOption,
+                    spawnX, spawnY, spawnZ,
+                    velocityX, velocityY, velocityZ
+            );
+        }
     }
 
 
@@ -359,7 +397,71 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
 
 
 
-    private class HuntIntruderGoal extends Goal {
+    private class BaseGoal extends Goal {
+        public int revealTicks;
+
+        public boolean willReveal;
+        public boolean willHide;
+
+        public boolean hasRevealed;
+
+        public BaseGoal() {}
+
+
+
+        public void computeComfortability() {
+            if (
+                    Domovoi.this.getRevealState() == RevealState.INVISIBLE
+                            && Domovoi.this.random.nextFloat() < Domovoi.this.getComfort()
+            ) {
+                this.willReveal = true;
+                this.revealTicks = Domovoi.this.random.nextInt( 10, 15 );
+            } else if (
+                    Domovoi.this.getRevealState() == RevealState.VISIBLE
+                            && Domovoi.this.random.nextFloat() > Domovoi.this.getComfort()
+            ) {
+                this.willHide = true;
+                this.revealTicks = Domovoi.this.random.nextInt( 10, 15 );
+            }
+        }
+
+
+
+        @Override
+        public boolean canUse() { return true; }
+
+
+
+        @Override
+        public void start() { this.computeComfortability(); }
+
+        @Override
+        public void tick() {
+            if ( this.willReveal ) {
+                if ( this.revealTicks <= 0 && !this.hasRevealed ) {
+                    Domovoi.this.setRevealState( RevealState.FADING_IN );
+
+                    this.hasRevealed = true;
+                } else { this.revealTicks--; }
+            } else if ( this.willHide ) {
+                if ( this.revealTicks <= 0 && !this.hasRevealed ) {
+                    Domovoi.this.setRevealState( RevealState.FADING_OUT );
+
+                    this.hasRevealed = true;
+                } else { this.revealTicks--; }
+            }
+        }
+
+        @Override
+        public void stop() {
+            this.willReveal     = false;
+            this.willHide       = false;
+            this.hasRevealed    = false;
+        }
+    }
+
+
+    private class HuntIntruderGoal extends BaseGoal {
         private enum HuntingState { NONE, MOTH, BUG }
 
         private DomovoiHearthBlockEntity domovoiHearthBlockEntity;
@@ -374,17 +476,12 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
 
         private int eatingTicks;
 
-        private int revealTicks;
-        private boolean willReveal;
-        private boolean hasRevealed;
-
         public HuntIntruderGoal() { this.setFlags( EnumSet.of( Flag.MOVE ) ); }
+
 
 
         @Override
         public boolean canUse() {
-            if ( Domovoi.this.navigation.isInProgress() ) { return false; }
-
             DomovoiHearthBlockEntity domovoiHearthBlockEntity = Domovoi.this.getHearthBlock();
             if (
                     domovoiHearthBlockEntity != null
@@ -412,6 +509,7 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
 
                     return true;
                 }
+                else { this.domovoiHearthBlockEntity.removeDecayMob( this.decayEntityUUID ); }
             } else { return false; }
             return false;
         }
@@ -423,23 +521,17 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
 
         @Override
         public void start() {
+            super.start();
+
             if ( this.huntingState == HuntingState.MOTH ) {
                 Domovoi.this.setNoGravity( true );
                 Domovoi.this.setDeltaMovement( Vec3.ZERO );
             }
 
-            this.eatingTicks = Domovoi.this.random.nextInt( 500, 700 );
+            this.eatingTicks = Domovoi.this.random.nextInt( 200, 300 );
 
             if ( Domovoi.this.getRevealState() == RevealState.VISIBLE )
             { Domovoi.this.setRevealState( RevealState.FADING_OUT ); }
-
-            if (
-                    Domovoi.this.getRevealState() == RevealState.INVISIBLE
-                            && Domovoi.this.random.nextFloat() < Domovoi.this.getComfort()
-            ) {
-                this.willReveal = true;
-                this.revealTicks = Domovoi.this.random.nextInt( 20, 40 );
-            }
         }
 
         @Override
@@ -464,21 +556,8 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
                     Domovoi.this.setConsumeMobVariant( this.moth.getVariant() );
 
 
+                    Domovoi.this.setNoGravity( false );
                     this.hasCaughtIntruder = true;
-                } else if ( this.hasCaughtIntruder ) {
-                    if ( this.willReveal ) {
-                        if ( this.revealTicks <= 0 && !this.hasRevealed ) {
-                            Domovoi.this.setRevealState( RevealState.FADING_IN );
-
-                            this.hasRevealed = true;
-                        } else { this.revealTicks--; }
-                    }
-
-                    if ( this.eatingTicks <= 0 ) {
-                        Domovoi.this.setAnimationState( AnimationState.IDLE );
-
-                        this.huntingState = HuntingState.NONE;
-                    } else { this.eatingTicks--; }
                 }
             } else if ( this.huntingState == HuntingState.BUG ) {
                 if (
@@ -490,7 +569,6 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
                             this.bug.getBlockY(),
                             this.bug.getBlockZ()
                     );
-                    Domovoi.this.setDeltaMovement( Vec3.ZERO );
 
                     this.bug.discard();
 
@@ -501,26 +579,24 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
 
 
                     this.hasCaughtIntruder = true;
-                } else if ( this.hasCaughtIntruder ) {
-                    if ( this.willReveal ) {
-                        if ( this.revealTicks <= 0 && !this.hasRevealed ) {
-                            Domovoi.this.setRevealState( RevealState.FADING_IN );
-
-                            this.hasRevealed = true;
-                        } else { this.revealTicks--; }
-                    }
-
-                    if ( this.eatingTicks <= 0 ) {
-                        Domovoi.this.setAnimationState( AnimationState.IDLE );
-
-                        this.huntingState = HuntingState.NONE;
-                    } else { this.eatingTicks--; }
                 }
+            }
+
+            if ( this.hasCaughtIntruder ) {
+                super.tick();
+
+                if ( this.eatingTicks <= 0 ) {
+                    Domovoi.this.setAnimationState( AnimationState.IDLE );
+
+                    this.huntingState = HuntingState.NONE;
+                } else { this.eatingTicks--; }
             }
         }
 
         @Override
         public void stop() {
+            super.stop();
+
             if ( Domovoi.this.getHearthBlock() != null ) {
                 this.domovoiHearthBlockEntity.removeMob(
                         this.domovoiHearthBlockEntity.decayMobsIndexOf,
@@ -528,8 +604,6 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
                         this.decayEntityUUID
                 );
             }
-
-            if ( this.huntingState == HuntingState.MOTH ) { Domovoi.this.setNoGravity( false ); }
 
             Domovoi.this.setConsumeType( ConsumeType.NONE );
 
@@ -542,13 +616,10 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
             this.bug = null;
 
             this.hasCaughtIntruder = false;
-
-            this.willReveal = false;
-            this.hasRevealed = false;
         }
     }
 
-    private class CleanHomeGoal extends Goal {
+    private class CleanHomeGoal extends BaseGoal {
         private enum CleanType {
             DUST( 0.7, 0.5 ),
             COBWEB( 0.7, 0.5 );
@@ -572,11 +643,6 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
         private int cleanTicks;
         private boolean cleaningStarted;
 
-        private int revealTicks;
-        private boolean willReveal;
-        private boolean willHide;
-        private boolean hasRevealed;
-
         public CleanHomeGoal() { this.setFlags( EnumSet.of( Flag.MOVE, Flag.LOOK ) ); }
 
 
@@ -595,8 +661,6 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
 
         @Override
         public boolean canUse() {
-            if ( Domovoi.this.navigation.isInProgress() ) { return false; }
-
             DomovoiHearthBlockEntity domovoiHearthBlockEntity = Domovoi.this.getHearthBlock();
             if (
                     domovoiHearthBlockEntity != null
@@ -624,6 +688,8 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
 
         @Override
         public void start() {
+            super.start();
+
             Domovoi.this.initialGoalIntent = null;
 
             this.decayBlockTarget = Domovoi.this.getMovePos(
@@ -657,28 +723,13 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
 
                 this.cleanTicks = Domovoi.this.random.nextInt( 100, 200 );
                 this.cleaningStarted = true;
-
-
-                if (
-                        Domovoi.this.getRevealState() == RevealState.INVISIBLE
-                                && Domovoi.this.random.nextFloat() < Domovoi.this.getComfort()
-                ) {
-                    TheDomovoi.LOGGER.info( "reveal" );
-                    this.willReveal = true;
-                    this.revealTicks = Domovoi.this.random.nextInt( 20, 50 );
-                } else if (
-                        Domovoi.this.getRevealState() == RevealState.VISIBLE
-                                && Domovoi.this.random.nextFloat() > Domovoi.this.getComfort()
-                ) {
-                    TheDomovoi.LOGGER.info( "hide" );
-                    this.willHide = true;
-                    this.revealTicks = Domovoi.this.random.nextInt( 20, 50 );
-                }
             }
         }
 
         @Override
         public void tick() {
+            super.tick();
+
             this.cleanTicks--;
 
             Domovoi.this.getLookControl().setLookAt(
@@ -689,24 +740,12 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
             );
 
             if ( this.cleanType == CleanType.COBWEB ) { Domovoi.this.setDeltaMovement( Vec3.ZERO ); }
-
-            if ( this.willReveal ) {
-                if ( this.revealTicks <= 0 && !this.hasRevealed ) {
-                    Domovoi.this.setRevealState( RevealState.FADING_IN );
-
-                    this.hasRevealed = true;
-                } else { this.revealTicks--; }
-            } else if ( this.willHide ) {
-                if ( this.revealTicks <= 0 && !this.hasRevealed ) {
-                    Domovoi.this.setRevealState( RevealState.FADING_OUT );
-
-                    this.hasRevealed = true;
-                } else { this.revealTicks--; }
-            }
         }
 
         @Override
         public void stop() {
+            super.stop();
+
             if ( this.cleaningStarted && Domovoi.this.getHearthBlock() != null ) {
                 Domovoi.this.level().destroyBlock( this.decayBlockPos, false );
                 this.domovoiHearthBlockEntity.removeDecayBlock( this.decayBlockPos );
@@ -723,20 +762,15 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
 
             this.cleanType = null;
             this.cleaningStarted = false;
-
-            this.hasRevealed = false;
-            this.willReveal = false;
-            this.willHide = false;
         }
     }
 
-    private class CheckForOfferingsGoal extends Goal {
+    private class CheckForOfferingsGoal extends BaseGoal {
         private enum OfferingCupGoal { DRINK_MILK, EAT_BREAD }
 
         private DomovoiHearthBlockEntity domovoiHearthBlockEntity;
 
         private BlockPos offeringCupBlockPos;
-        private Vec3 offeringCupBlockTarget;
 
         private OfferingCupGoal offeringCupGoal;
 
@@ -748,9 +782,6 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
         private int eatBreadTicks;
         private boolean hasStartedEatingBread;
 
-        private int revealTicks;
-        private boolean hasRevealed;
-
 
         public CheckForOfferingsGoal() { this.setFlags( EnumSet.of( Flag.MOVE ) ); }
 
@@ -758,12 +789,10 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
 
         @Override
         public boolean canUse() {
-            if ( Domovoi.this.navigation.isInProgress() ) { return false; }
-
             DomovoiHearthBlockEntity domovoiHearthBlockEntity = Domovoi.this.getHearthBlock();
             if (
                     domovoiHearthBlockEntity != null
-                            && !domovoiHearthBlockEntity.decayBlocks.isEmpty()
+                            && !domovoiHearthBlockEntity.offeringCupBlocks.isEmpty()
                             && (
                             Domovoi.this.initialGoalIntent == InitialGoalIntent.RECEIVE_OFFERINGS
                                     || Domovoi.this.random.nextFloat() < Domovoi.this.getRespect()
@@ -772,46 +801,46 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
                 this.domovoiHearthBlockEntity = domovoiHearthBlockEntity;
 
                 for ( BlockPos blockPos : this.domovoiHearthBlockEntity.offeringCupBlocks ) {
-                    boolean hasMilk = OfferingCupBlock.getHasMilk( Domovoi.this.level(), blockPos );
-                    boolean hasBread = OfferingCupBlock.getHasBread( Domovoi.this.level(), blockPos );
+                    if ( Domovoi.this.level().getBlockState( blockPos ).getBlock() instanceof OfferingCupBlock ) {
+                        boolean hasMilk = OfferingCupBlock.getHasMilk( Domovoi.this.level(), blockPos );
+                        boolean hasBread = OfferingCupBlock.getHasBread( Domovoi.this.level(), blockPos );
 
-                    if ( hasMilk || hasBread ) {
-                        this.offeringCupBlockPos = blockPos;
+                        if ( hasMilk || hasBread ) {
+                            this.offeringCupBlockPos = blockPos;
 
-                        this.cupHasMilk = hasMilk;
-                        this.cupHasBread = hasBread;
+                            this.cupHasMilk = hasMilk;
+                            this.cupHasBread = hasBread;
 
-                        return true;
-                    }
+                            return true;
+                        }
+                    } else { this.domovoiHearthBlockEntity.removeOfferingBlock( blockPos ); }
                 }
             } else { return false; }
             return false;
         }
 
         @Override
-        public boolean canContinueToUse() {
-            return
-                    this.offeringCupBlockTarget != null
-                            && this.offeringCupGoal != null;
-        }
+        public boolean canContinueToUse() { return this.offeringCupGoal != null; }
 
 
 
         @Override
         public void start() {
+            super.start();
+
             Domovoi.this.initialGoalIntent = null;
 
-            this.offeringCupBlockTarget = Domovoi.this.getMovePos(
+            Vec3 offeringCupBlockTarget = Domovoi.this.getMovePos(
                     this.offeringCupBlockPos,
                     0.7D,
                     0.5D
             );
 
-            if ( this.offeringCupBlockTarget != null ) {
+            if ( offeringCupBlockTarget != null ) {
                 Domovoi.this.teleportTo(
-                        this.offeringCupBlockTarget.x,
-                        this.offeringCupBlockTarget.y,
-                        this.offeringCupBlockTarget.z
+                        offeringCupBlockTarget.x,
+                        offeringCupBlockTarget.y,
+                        offeringCupBlockTarget.z
                 );
 
                 Domovoi.this.getLookControl().setLookAt(
@@ -823,27 +852,33 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
                 if ( this.cupHasMilk ) { this.offeringCupGoal = OfferingCupGoal.DRINK_MILK; }
                 else if ( this.cupHasBread ) { this.offeringCupGoal = OfferingCupGoal.EAT_BREAD; }
 
-                if ( this.cupHasMilk ) { this.drinkMilkTicks = Domovoi.this.random.nextInt( 60, 120 ); }
-                if ( this.cupHasBread ) { this.eatBreadTicks = Domovoi.this.random.nextInt( 60, 120 ); }
-
-                this.revealTicks = Domovoi.this.random.nextInt( 20, 50 );
+                if ( this.cupHasMilk ) { this.drinkMilkTicks = Domovoi.this.random.nextInt( 200, 300 ); }
+                if ( this.cupHasBread ) { this.eatBreadTicks = Domovoi.this.random.nextInt( 200, 300 ); }
             }
         }
 
         @Override
         public void tick() {
+            super.tick();
+
             if ( this.offeringCupGoal == OfferingCupGoal.DRINK_MILK ) {
                 if ( !this.hasStartedDrinkingMilk ) {
                     Domovoi.this.setConsumeType( ConsumeType.MILK );
                     Domovoi.this.setAnimationState( AnimationState.CONSUMING );
+
+                    OfferingCupBlock.setIsVisible( Domovoi.this.level(), this.offeringCupBlockPos, false );
                 }
 
                 if ( this.drinkMilkTicks <= 0 ) {
                     OfferingCupBlock.setHasMilk( Domovoi.this.level(), this.offeringCupBlockPos, false );
 
+                    Domovoi.this.setConsumeType( ConsumeType.NONE );
                     Domovoi.this.setAnimationState( AnimationState.IDLE );
 
+                    OfferingCupBlock.setIsVisible( Domovoi.this.level(), this.offeringCupBlockPos, true );
+
                     if ( this.cupHasBread ) { this.offeringCupGoal = OfferingCupGoal.EAT_BREAD; }
+                    else { this.offeringCupGoal = null; }
                 } else { this.drinkMilkTicks--; }
 
             } else if ( this.offeringCupGoal == OfferingCupGoal.EAT_BREAD ) {
@@ -855,21 +890,18 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
                     if ( this.eatBreadTicks <= 0 ) {
                         OfferingCupBlock.setHasBread( Domovoi.this.level(), this.offeringCupBlockPos, false );
 
+                        Domovoi.this.setConsumeType( ConsumeType.NONE );
                         Domovoi.this.setAnimationState( AnimationState.IDLE );
 
                         this.offeringCupGoal = null;
                     } else { this.eatBreadTicks--; }
             }
-
-            if ( this.revealTicks <= 0 && !this.hasRevealed ) {
-                Domovoi.this.setRevealState( RevealState.FADING_IN );
-
-                this.hasRevealed = true;
-            } else { this.revealTicks--; }
         }
 
         @Override
         public void stop() {
+            super.stop();
+
             Domovoi.this.setRevealState( RevealState.FADING_OUT );
 
             this.domovoiHearthBlockEntity = null;
@@ -883,18 +915,11 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
             this.cupHasBread = false;
             this.eatBreadTicks = 0;
             this.hasStartedEatingBread = false;
-
-            this.hasRevealed = false;
         }
     }
 
-    private class SleepGoal extends Goal {
+    private class SleepGoal extends BaseGoal {
         private int sleepTicks;
-
-        private int revealTicks;
-        private boolean hasRevealed;
-        private int unRevealTicks;
-        private boolean hasUnrevealed;
 
         public SleepGoal() { this.setFlags( EnumSet.of( Flag.MOVE ) ); }
 
@@ -902,21 +927,21 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
 
         @Override
         public boolean canUse() {
-            if ( Domovoi.this.navigation.isInProgress() ) { return false; }
-
             return Domovoi.this.random.nextFloat() < Domovoi.this.getComfort()
                     && Domovoi.this.random.nextInt( 10 ) == 0;
         }
 
         @Override
         public boolean canContinueToUse() {
-            return this.unRevealTicks > 0;
+            return this.sleepTicks > 0;
         }
 
 
 
         @Override
         public void start() {
+            super.start();
+
             Vec3 sleepBlockPos = DefaultRandomPos.getPos( Domovoi.this, 10, 7 );
             if ( sleepBlockPos != null ) {
                 Domovoi.this.teleportTo(
@@ -925,37 +950,24 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
                         sleepBlockPos.z
                 );
 
-                this.sleepTicks = Domovoi.this.random.nextInt( 6000, 18000 );
+                this.sleepTicks = Domovoi.this.random.nextInt( 3000, 6000 );
                 Domovoi.this.setAnimationState( AnimationState.SLEEPING );
-
-                this.revealTicks    = Domovoi.this.random.nextInt( 20, 50 );
-                this.hasRevealed    = false;
-                this.unRevealTicks  = Domovoi.this.random.nextInt( 20, 50 );
-                this.hasUnrevealed  = false;
             }
         }
 
         @Override
         public void tick() {
-            if ( this.revealTicks <= 0 && !this.hasRevealed ) {
-                Domovoi.this.setRevealState( RevealState.FADING_IN );
+            super.tick();
 
-                this.hasRevealed = true;
-            } else { this.revealTicks--; }
-
-            if ( this.sleepTicks <= 0 ) {
-                if ( !hasUnrevealed ) {
-                    Domovoi.this.setRevealState( RevealState.FADING_OUT );
-
-                    this.hasUnrevealed = true;
-                }
-
-                if ( this.unRevealTicks > 0 ) { this.unRevealTicks--; }
-            } else { this.sleepTicks--; }
+            this.sleepTicks--;
         }
 
         @Override
-        public void stop() { Domovoi.this.setAnimationState( AnimationState.IDLE ); }
+        public void stop() {
+            super.stop();
+
+            Domovoi.this.setAnimationState( AnimationState.IDLE );
+        }
 
 
     }
@@ -973,6 +985,7 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
 
         @Override
         public boolean canContinueToUse() { return false; }
+
 
 
         @Override

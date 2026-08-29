@@ -23,8 +23,13 @@ public class ModEntitySounds {
             SoundEvent::createVariableRangeEvent
     );
 
-    public static final Holder<SoundEvent> DOMOVOI_SOUND = SOUND_EVENTS.register(
-            "domovoi_sound",
+    public static final Holder<SoundEvent> DOMOVOI_SWEEP = SOUND_EVENTS.register(
+            "domovoi_sweep",
+            SoundEvent::createVariableRangeEvent
+    );
+
+    public static final Holder<SoundEvent> DOMOVOI_DUST = SOUND_EVENTS.register(
+            "domovoi_dust",
             SoundEvent::createVariableRangeEvent
     );
 
