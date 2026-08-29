@@ -111,7 +111,7 @@ public class DomovoiHearthBlockEntity extends BlockEntity {
     private int domovoiTimer;
 
     private static final DecayConfig DECAY_CONFIG = new DecayConfig(
-            0.05F,
+            0.01F,
             0.007F,
            10,
             1.0F,
@@ -296,16 +296,16 @@ public class DomovoiHearthBlockEntity extends BlockEntity {
 
 
     private int getDustTimer()
-    { return random.nextInt( 3 * Time.DAY.getTicks(), 6 * Time.DAY.getTicks() ); }
+    { return random.nextInt( 3 * Time.MINUTE.getTicks(), 5 * Time.MINUTE.getTicks() ); }
 
     private int getCobwebTimer()
-    { return random.nextInt( 4 * Time.DAY.getTicks(), 6 * Time.DAY.getTicks() ); }
+    { return random.nextInt( 4 * Time.MINUTE.getTicks(), 8 * Time.MINUTE.getTicks() ); }
 
     private int getMothTimer()
-    { return random.nextInt( 5 * Time.DAY.getTicks(), 8 * Time.DAY.getTicks() ); }
+    { return random.nextInt( 1 * Time.DAY.getTicks(), 2 * Time.DAY.getTicks() ); }
 
     private int getBugTimer()
-    { return random.nextInt( 4 * Time.DAY.getTicks(), 8 * Time.DAY.getTicks() ); }
+    { return random.nextInt( 1 * Time.DAY.getTicks(), 2 * Time.DAY.getTicks() ); }
 
 
 
@@ -528,6 +528,7 @@ public class DomovoiHearthBlockEntity extends BlockEntity {
                     hearthPos
             );
             if ( fleePos == null ) { continue; }
+            TheDomovoi.LOGGER.info( "monster fleeing" );
 
             monster.setTarget( null );
             monster.getNavigation().moveTo(
@@ -555,6 +556,7 @@ public class DomovoiHearthBlockEntity extends BlockEntity {
 
         this.domovoiData.setDomovoiUUID( domovoi.getUUID() );
         pLevel.addFreshEntity( domovoi );
+        TheDomovoi.LOGGER.info( "created domovoi" );
     }
 
 
@@ -587,9 +589,9 @@ public class DomovoiHearthBlockEntity extends BlockEntity {
                 { this.protectHome( serverLevel ); }
 
                 if ( !this.decayMobs.isEmpty() )
-                { createDomovoi( pLevel, Domovoi.InitialGoalIntent.HUNTING ); }
+                { TheDomovoi.LOGGER.info( "hunting" ); createDomovoi( pLevel, Domovoi.InitialGoalIntent.HUNTING ); }
                 else if ( !this.decayBlocks.isEmpty() )
-                { createDomovoi( pLevel, Domovoi.InitialGoalIntent.CLEANING ); }
+                { TheDomovoi.LOGGER.info( "cleaning" ); createDomovoi( pLevel, Domovoi.InitialGoalIntent.CLEANING ); }
             }
 
             this.domovoiTimer = getDomovoiTimer();
@@ -611,7 +613,7 @@ public class DomovoiHearthBlockEntity extends BlockEntity {
 
 
     private void handleNodeDiscovery( Level pLevel, BlockPos pBlockPos ) {
-        if ( this.hasDirectAccessToSky( pLevel, pBlockPos ) ) { return; }
+//        if ( this.hasDirectAccessToSky( pLevel, pBlockPos ) ) { return; }
 
         for ( Direction layer0Direction : Direction.values() ) {
             BlockPos neighborBlockPos = pBlockPos.relative( layer0Direction );
@@ -640,6 +642,10 @@ public class DomovoiHearthBlockEntity extends BlockEntity {
     private void handleNodeScanCompleted() {
         homeState = HomeState.COMPUTED;
         homeDataRecord.clear();
+
+        TheDomovoi.LOGGER.info( "floor: {}", this.floorBlocks.size() );
+        TheDomovoi.LOGGER.info( "corner: {}", this.cornerBlocks.size() );
+        TheDomovoi.LOGGER.info( "offering cups: {}", this.offeringCupBlocks.size() );
     }
 
     private void handleNodeScan( Level pLevel ) {
@@ -659,7 +665,7 @@ public class DomovoiHearthBlockEntity extends BlockEntity {
             BlockPos airBlock = homeDataQueue.poll();
             if ( airBlock == null ) { continue; }
 
-            if ( this.hasDirectAccessToSky( pLevel, airBlock ) ) { continue; }
+//            if ( this.hasDirectAccessToSky( pLevel, airBlock ) ) { continue; }
 
             int nonPassableNeighbors = 0;
             for ( Direction direction : Direction.values() ) {

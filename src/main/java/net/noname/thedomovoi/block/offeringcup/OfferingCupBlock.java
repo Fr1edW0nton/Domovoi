@@ -30,7 +30,7 @@ public class OfferingCupBlock extends Block {
     public static final BooleanProperty HAS_MILK    = BooleanProperty.create( "has_milk" );
     public static final BooleanProperty HAS_BREAD   = BooleanProperty.create( "has_bread" );
 
-    public static final BooleanProperty IS_VISIBLE  = BooleanProperty.create( "has_milk" );
+    public static final BooleanProperty IS_VISIBLE  = BooleanProperty.create( "is_visible" );
 
 
     public OfferingCupBlock( Properties properties ) {

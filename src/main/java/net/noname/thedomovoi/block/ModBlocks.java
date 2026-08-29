@@ -83,6 +83,7 @@ public class ModBlocks {
                     BlockBehaviour.Properties.of()
                             .setId( ResourceKey.create( Registries.BLOCK, registryName ) )
                             .strength( 0.1F )
+                            .noOcclusion()
             )
     );
 

@@ -175,14 +175,14 @@ public class Domovoi extends PathfinderMob implements GeoEntity {
                                 this,
                                 SoundEvents.GENERIC_DRINK.value(),
                                 SoundSource.NEUTRAL,
-                                1.0F, 1.0F
+                                0.3F, 1.0F
                         );
                     } else {
                         this.level().playLocalSound(
                                 this,
                                 SoundEvents.GENERIC_EAT.value(),
                                 SoundSource.NEUTRAL,
-                                1.0F, 1.0F
+                                0.3F, 1.0F
                         );
                     }
                 }
